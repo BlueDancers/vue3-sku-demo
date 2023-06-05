@@ -1,0 +1,35 @@
+.base_card {
+  margin: 16px 0;
+  padding: 16px;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  background: #fff;
+}
+
+.base_form {
+  margin: 16px 0;
+  padding: 16px;
+  padding-bottom: 0px;
+  box-shadow: 0 1px 4px 0 rgb(0 0 0 / 0.1);
+  background: #fff;
+  .ant-form {
+    display: flex;
+    flex-flow: wrap;
+  }
+  .ant-form-item {
+    margin-bottom: 16px;
+    margin-right: 16px;
+    .ant-input {
+      // width: 180px;
+    }
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  html,
+  img {
+    filter: invert(1) hue-rotate(180deg);
+  }
+  .some-ele {
+    box-shadow: none;
+  }
+}

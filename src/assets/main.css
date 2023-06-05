@@ -1,0 +1,18 @@
+/*! @import */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  padding: 0px;
+  margin: 0px;
+}
+
+#nprogress .bar {
+  background: #4e7be6 !important;
+}
+
+::-webkit-scrollbar {
+  width: 0 !important; /* remove scrollbar space */
+  background: transparent; /* optional: just make scrollbar invisible */
+}
