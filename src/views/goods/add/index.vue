@@ -61,11 +61,7 @@
                 <img v-if="record.thumbnailUrl" class="w-[90px] h-[90px]" :src="record.thumbnailUrl" />
               </div>
               <div v-else>
-                <a-input
-                  class="w-[80px]"
-                  :value="record[column.dataIndex]"
-                  @input="changeSkuData(index, column.dataIndex, $event)"
-                ></a-input>
+                <a-input class="w-[80px]" v-model:value="record[column.dataIndex]"></a-input>
               </div>
             </template>
           </a-table>
@@ -79,9 +75,9 @@
 <script setup lang="ts">
 import { ref, watch, type Ref } from 'vue'
 import type { skuType, skuAttrItemType } from './type.d'
+import type { ColumnType } from 'ant-design-vue/lib/table'
 import { chooseToFile } from '@yipai-front-end/choose-to-file'
 import { deepClone } from '@yipai-front-end/lib'
-import type { ColumnType } from 'ant-design-vue/lib/table'
 import DeleteIcon from './components/deleteIcon.vue'
 
 const skuAttributes: Ref<skuAttrItemType[]> = ref([])
@@ -121,21 +117,20 @@ const columns: ColumnType[] = [
   },
 ]
 
+// 监听sku本身的变化,并将当前sku进行备份
 watch(
   () => stockKeepUnits.value,
   (value) => {
-    console.log(deepClone(value))
     afterSku = deepClone(value)
   },
   { deep: true }
 )
 
-// 监听销售属性的变化
+// 监听销售属性的变化,并构建sku
 watch(
   () => skuAttributes.value,
   (value) => {
     if (value.length) {
-      console.log('开始销售属性构建sku')
       generateSku(deepClone(value))
     }
   },
@@ -148,27 +143,25 @@ watch(
  */
 function generateSku(skuAttribute: skuAttrItemType[]) {
   let attrValue: any[] = []
-  skuAttribute.map((item, index) => {
+  skuAttribute.map((item) => {
     attrValue.push(item.values)
   })
   let skus: any[] = []
   if (attrValue.length === 0) {
     stockKeepUnits.value = []
     return
-  } else if (attrValue.length < 2 && attrValue[0].length === 1) {
-    skus = [{ attributeValue: attrValue[0][0].attributeValue, thumbnailUrl: attrValue[0][0].thumbnailUrl }]
-  } else {
-    skus = attrValue.reduce((col: any[], set) => {
-      let res: any[] = []
-      col.forEach((c) => {
-        set.forEach((s) => {
-          let t = c.attributeValue + ',' + s.attributeValue
-          res.push({ attributeValue: t, thumbnailUrl: c.thumbnailUrl })
-        })
-      })
-      return res
-    })
   }
+
+  skus = attrValue.reduce((col: any[], set) => {
+    let res: any[] = []
+    col.forEach((c) => {
+      set.forEach((s) => {
+        let t = c.attributeValue + ',' + s.attributeValue
+        res.push({ attributeValue: t, thumbnailUrl: c.thumbnailUrl })
+      })
+    })
+    return res
+  })
   // 增加,回显相关字段
   skus.map((e: skuType) => {
     let oldIndex = afterSku.findIndex((item) => item.attributeValue == e.attributeValue)
@@ -176,6 +169,7 @@ function generateSku(skuAttribute: skuAttrItemType[]) {
     if (oldIndex !== -1) {
       old = afterSku[oldIndex]
     }
+    console.log('单项', e)
     e.id = oldIndex == -1 ? '' : old.id
     e.price = oldIndex == -1 ? '' : old.price
     e.marketPrice = oldIndex == -1 ? '' : old.marketPrice
