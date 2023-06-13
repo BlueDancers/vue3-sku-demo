@@ -16,10 +16,6 @@ export type skuType = {
  */
 export type skuAttrItemType = {
   /**
-   * 编辑场景存在的id
-   */
-  id?: string
-  /**
    * 是否上传图片
    */
   isAddImage: boolean
@@ -27,10 +23,6 @@ export type skuAttrItemType = {
    * 名称
    */
   title: string
-  /**
-   * 属性类型 2 销售属性
-   */
-  type?: 2
   /**
    * 具体数据
    */

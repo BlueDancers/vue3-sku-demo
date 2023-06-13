@@ -23,9 +23,8 @@
                   class="w-[130px]"
                   v-model:value="text.attributeValue"
                 ></a-input>
-                <!-- 只有第一个显示图片 -->
                 <div
-                  v-if="index == 0 && item.isAddImage"
+                  v-if="item.isAddImage"
                   class="relative w-[100px] h-[100px] border-solid border-[#eee] border-[1px] mt-[10px] cursor-pointer flex justify-center items-center bg-white"
                   @click="addSkuAttrImage(index, cindex)"
                 >
@@ -37,8 +36,9 @@
             <a-button :disabled="item.values.length >= 5" type="text" @click="addSkuAttrName(index)">
               增加字段
             </a-button>
-            <a-button class="ml-[10px]" v-if="index == 0" @click="toggleSkuImg">
-              {{ item.isAddImage ? '取消图片' : '上传图片' }}
+            <a-button class="ml-[10px]" v-if="isAddImg" @click="toggleSkuImg(index)">上传图片</a-button>
+            <a-button class="ml-[10px]" v-if="item.isAddImage" @click="toggleSkuImg(index)">
+              取消上传
             </a-button>
           </div>
         </div>
@@ -68,17 +68,19 @@
         </a-form-item-rest>
       </a-form-item>
       <a-button type="primary" @click="save" class="ml-[70px]">保存sku</a-button>
+      <a-button type="danger" ghost @click="togoGithub" class="ml-[20px]">查看源码</a-button>
     </a-form>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, type Ref } from 'vue'
+import { ref, watch, type Ref, computed } from 'vue'
 import type { skuType, skuAttrItemType } from './type.d'
 import type { ColumnType } from 'ant-design-vue/lib/table'
 import { chooseToFile } from '@yipai-front-end/choose-to-file'
 import { deepClone } from '@yipai-front-end/lib'
 import DeleteIcon from './components/deleteIcon.vue'
+import { message } from 'ant-design-vue'
 
 const skuAttributes: Ref<skuAttrItemType[]> = ref([])
 const stockKeepUnits: Ref<skuType[]> = ref([])
@@ -116,6 +118,11 @@ const columns: ColumnType[] = [
     title: '商品条码',
   },
 ]
+
+// 是否可以增加图片
+const isAddImg = computed(() => {
+  return skuAttributes.value.findIndex((e) => e.isAddImage == true) == -1 ? true : false
+})
 
 // 监听sku本身的变化,并将当前sku进行备份
 watch(
@@ -157,24 +164,21 @@ function generateSku(skuAttribute: skuAttrItemType[]) {
     col.forEach((c) => {
       set.forEach((s) => {
         let t = c.attributeValue + ',' + s.attributeValue
-        res.push({ attributeValue: t, thumbnailUrl: c.thumbnailUrl })
+        res.push({ attributeValue: t, thumbnailUrl: c.thumbnailUrl || s.thumbnailUrl || '' })
       })
     })
     return res
   })
   // 增加,回显相关字段
   skus.map((e: skuType) => {
-    let oldIndex = afterSku.findIndex((item) => item.attributeValue == e.attributeValue)
-    let old
-    if (oldIndex !== -1) {
-      old = afterSku[oldIndex]
-    }
+    // 寻找销售规格一致的副本数据
+    let old = afterSku.find((item) => item.attributeValue == e.attributeValue)
     console.log('单项', e)
-    e.id = oldIndex == -1 ? '' : old.id
-    e.price = oldIndex == -1 ? '' : old.price
-    e.marketPrice = oldIndex == -1 ? '' : old.marketPrice
-    e.stock = oldIndex == -1 ? '' : old.stock
-    e.specificationBarCode = oldIndex == -1 ? '' : old.specificationBarCode
+    e.id = old == null ? '' : old.id
+    e.price = old == null ? '' : old.price
+    e.marketPrice = old == null ? '' : old.marketPrice
+    e.stock = old == null ? '' : old.stock
+    e.specificationBarCode = old == null ? '' : old.specificationBarCode
     return e
   })
   console.log(skus, 'skus')
@@ -205,7 +209,12 @@ function deleteSkuAttrName(index: number, cindex: number) {
  */
 async function addSkuAttrImage(index: number, cindex: number) {
   let res = await chooseToFile()
-  skuAttributes.value[index].values[cindex].thumbnailUrl = ''
+  console.log(res)
+  // 生产环境此处应该是上传到服务端,获取线上url
+  // 此处写法仅限测试,上传大图片可能造成卡顿
+  _blobToDataUrl(res[0], (res) => {
+    skuAttributes.value[index].values[cindex].thumbnailUrl = res
+  })
 }
 
 /**
@@ -219,9 +228,15 @@ function addSkuAttrName(index: number) {
 /**
  * 切换首个sku是否上传图片的状态
  */
-function toggleSkuImg() {
-  let { isAddImage } = skuAttributes.value[0]
-  skuAttributes.value[0].isAddImage = !isAddImage
+function toggleSkuImg(index) {
+  let { isAddImage } = skuAttributes.value[index]
+  if (isAddImage) {
+    skuAttributes.value[index].values.map((e) => {
+      e.thumbnailUrl = ''
+      return e
+    })
+  }
+  skuAttributes.value[index].isAddImage = !isAddImage
 }
 
 /**
@@ -242,8 +257,22 @@ function changeSkuData(index: number, dataIndex: string, evt: any) {
 }
 
 function save() {
+  message.success('请查看控制台输出')
   console.log('销售属性:', skuAttributes.value)
   console.log('sku:', stockKeepUnits.value)
+}
+
+function _blobToDataUrl(file, callback) {
+  const reader = new FileReader()
+  reader.onload = () => {
+    const url = URL.createObjectURL(file) // 获取临时访问链接
+    callback(url)
+  }
+  reader.readAsDataURL(file)
+}
+
+function togoGithub() {
+  location.href = 'https://github.com/BlueDancers/vue3-sku-demo'
 }
 </script>
 
